@@ -37,5 +37,14 @@ pipeline {
                 sh 'docker push emnaboukhris/my_app_image:latest'
             }
         }
+        stage('Deploy on k8s') {
+             steps {
+                 script {
+                  // Assuming your Kubernetes manifests are in the same directory as your pipeline script
+                  sh 'kubectl apply -f fichier-deployment.yaml -f external-service-definition.yaml'
+                }
+            }
+        }
+
     }
 }
