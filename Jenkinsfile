@@ -33,9 +33,6 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                     sh 'docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD'
                 }
-                                // Print Docker Hub credentials for debugging
-                echo "DOCKER_HUB_USERNAME: $DOCKER_HUB_USERNAME"
-                echo "DOCKER_HUB_PASSWORD: $DOCKER_HUB_PASSWORD"
                 // Pousser l'image vers Docker Hub
                 sh 'docker push emnaboukhris/my_app_image:latest'
             }
