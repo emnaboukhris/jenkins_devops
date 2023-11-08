@@ -1,13 +1,5 @@
 pipeline {
     agent any
-    environment {
-        DOCKER_HOME = 'C:\Program Files\Docker\Docker\resources\bin'
-    }
-    tools {
-        // Specify the name of the Docker tool configured in Jenkins
-        dockerTool 'docker'
-    }
-
     stages {
         stage('Checkout') {
             steps {
