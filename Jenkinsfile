@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+   agent {
+        label 'docker-agent-alpine'
+    }   
     stages {
         stage('Checkout') {
             steps {
@@ -7,16 +9,12 @@ pipeline {
                 checkout([$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/emnaboukhris/jenkins_devops']]])
             }
         }
-stage('Build Docker Image') {
-    steps {
-        script {
-            def dockerTool = tool name: 'Docker', type: 'Tool'
-            def dockerImage = "my_app_image3"
-            docker.build(dockerImage, "--file Dockerfile .", dockerTool: dockerTool)
+        stage('Build Docker Image') {
+            steps {
+                // Construire l'image Docker
+                sh 'docker build -t my_app_image3 .'
+            }
         }
-    }
-}
-
         stage('Push to Docker Hub') {
             steps {
                 // Se connecter à Docker Hub
