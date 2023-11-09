@@ -41,7 +41,7 @@ pipeline {
              steps {
                  script {
                   // Assuming your Kubernetes manifests are in the same directory as your pipeline script
-                  sh 'C:\Program Files\Docker\Docker\resources\bin\kubectl apply -f fichier-deployment.yaml -f external-service-definition.yaml'
+                  sh 'kubectl apply -f fichier-deployment.yaml -f external-service-definition.yaml'
                 }
             }
         }
