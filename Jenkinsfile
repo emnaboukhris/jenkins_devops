@@ -1,11 +1,8 @@
 pipeline {
-    agent any
+    agent any 
     environment {
-       DOCKER_HOME = 'C:\\Program Files\\Docker\\Docker\\resources\\bin'
-    }
-    tools {
-        // Specify the name of the Docker tool configured in Jenkins
-        dockerTool 'docker'
+        TERRAFORM_DIR = 'D:\\Nouveau dossier\\terraform_1.6.4_windows_386'
+        KUBECONFIG_PATH = 'C:\\Users\\msi\\.kube\\config'
     }
     stages {
         stage('Checkout') {
@@ -14,37 +11,90 @@ pipeline {
                 checkout([$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/emnaboukhris/jenkins_devops']]])
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 // Construire l'image Docker
-                sh 'docker build -t mon-app .'
+                bat 'docker build -t mon-app .'
             }
         }
+
         stage('Tag Docker Image') {
             steps {
                 // Tag the Docker image
-                sh 'docker tag mon-app:latest emnaboukhris/my_app_image:latest'
+                bat 'docker tag mon-app:latest emnaboukhris/my_app_image:latest'
             }
         }
-        stage('Push to Docker Hub') {
+
+        stage('Push image to docker hub'){
+            steps{
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
+                        bat "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
+                        bat "docker push emnaboukhris/my_app_image:latest"
+                    }
+                }
+            }
+        }
+
+        stage("Verification de kubectl") {
             steps {
-
-                // Se connecter à Docker Hub
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                    sh 'docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD'
-                }
-                // Pousser l'image vers Docker Hub
-                sh 'docker push emnaboukhris/my_app_image:latest'
-            }
-        }
-        stage('Deploy on k8s') {
-             steps {
-                 script {
-                  // Assuming your Kubernetes manifests are in the same directory as your pipeline script
-                  sh 'C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl apply -f fichier-deployment.yaml -f external-service-definition.yaml'
+                withCredentials([file(credentialsId: 'kube_credentials', variable: 'KUBECONFIG')]) {
+                    echo "======== executing ========"
+                    bat "kubectl"
                 }
             }
         }
 
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    env.KUBECONFIG = KUBECONFIG_PATH
+                    echo "KUBECONFIG path: \$KUBECONFIG"
+                    
+                    try {
+                        bat "kubectl version"
+                        bat "kubectl apply -f fichier-deployment.yaml"  
+                    } catch (Exception e) {
+                        error "Error executing kubectl command: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+
+        stage('Creation des services') {
+            steps {
+                script {
+                    env.KUBECONFIG = KUBECONFIG_PATH
+                    echo "KUBECONFIG path: \$KUBECONFIG"
+                    
+                    try {
+                        echo "* executing *"
+                        bat "kubectl apply -f external-service-definition.yaml"
+                        bat "kubectl get services"
+                    } catch (Exception e) {
+                        error "Error executing kubectl command: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+        stage("Terraform Init") {
+            steps {
+                script {
+                    dir(TERRAFORM_DIR) {
+                        bat 'terraform init'
+                    }
+                }
+            }
+        }
+        stage('Terraform Apply') {
+            steps {
+                script {
+                    dir(TERRAFORM_DIR) {
+                        bat 'terraform apply -auto-approve'
+                    }
+                }
+            }
+        }
     }
 }

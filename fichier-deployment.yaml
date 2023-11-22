@@ -14,7 +14,6 @@ spec:
     spec:
       containers:
       - name: springboot-app-container
-        image: my_app_image3:latest
-        imagePullPolicy: IfNotPresent
+        image: emnaboukhris/my_app_image3:latest
         ports:
         - containerPort: 8080
